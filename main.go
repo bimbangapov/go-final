@@ -14,8 +14,9 @@ import (
 )
 
 func main() {
-	needDbInstall := db.NeedInstallDb("scheduler.db")
 	port := config.GetPortFromEnv()
+	dbName := config.GetDBFromEnv()
+	needDbInstall := db.NeedInstallDb(dbName)
 
 	err := os.Mkdir("logs", 0755)
 	if err != nil && !errors.Is(err, os.ErrExist) {
@@ -41,7 +42,7 @@ func main() {
 
 	myServ := server.NewServer(servLogs, port)
 
-	dataBase, err := sql.Open("sqlite", "scheduler.db")
+	dataBase, err := sql.Open("sqlite", dbName)
 	if err != nil {
 		log.Printf("error connecting to database: %v", err)
 		dbLogs.Fatal(err)

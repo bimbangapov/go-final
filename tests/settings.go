@@ -1,9 +1,12 @@
 package tests
 
-import "go-final/pkg/config"
+import (
+	"fmt"
+	"go-final/pkg/config"
+)
 
 var Port = config.GetPortFromEnv()
-var DBFile = "../scheduler.db"
+var DBFile = fmt.Sprintf("../%s", config.GetDBFromEnv())
 var FullNextDate = false
 var Search = false
 var Token = ``

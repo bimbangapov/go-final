@@ -16,3 +16,11 @@ func GetPortFromEnv() int {
 	}
 	return intPort
 }
+
+func GetDBFromEnv() string {
+	db := os.Getenv("TODO_DBFILE")
+	if db == "" {
+		return "scheduler.db"
+	}
+	return db
+}
