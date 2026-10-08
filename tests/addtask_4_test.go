@@ -110,7 +110,7 @@ func TestAddTask(t *testing.T) {
 
 	check := func() {
 		for _, v := range tbl {
-			today := v.date == "today"
+			today := v.date == "today" // true или false
 			if today {
 				v.date = now.Format(`20060102`)
 			}

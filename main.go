@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"go-final/pkg/config"
-	"go-final/pkg/db"
 	"go-final/pkg/server"
 	"log"
 	"os"
@@ -16,7 +15,6 @@ import (
 func main() {
 	port := config.GetPortFromEnv()
 	dbName := config.GetDBFromEnv()
-	needDbInstall := db.NeedInstallDb(dbName)
 
 	err := os.Mkdir("logs", 0755)
 	if err != nil && !errors.Is(err, os.ErrExist) {
@@ -35,36 +33,21 @@ func main() {
 		`serv`,
 		log.LstdFlags|log.Lshortfile)
 
-	dbLogs := log.New(
-		flog,
-		`db`,
-		log.LstdFlags|log.Lshortfile)
-
-	myServ := server.NewServer(servLogs, port)
-
 	dataBase, err := sql.Open("sqlite", dbName)
 	if err != nil {
 		log.Printf("error connecting to database: %v", err)
-		dbLogs.Fatal(err)
+		servLogs.Fatal(err)
 	}
 	defer dataBase.Close()
 
-	store, err := db.NewSchedulerStore(dataBase, dbLogs)
+	myServ, err := server.NewServer(servLogs, port, dataBase)
 	if err != nil {
-		log.Printf("error connecting to database: %v", err)
-		dbLogs.Fatal(err)
-	}
-
-	if needDbInstall {
-		if err := store.Init(); err != nil {
-			log.Printf("error connecting to database: %v", err)
-			dbLogs.Fatal(err)
-		}
+		servLogs.Fatal("error creating server: ", err)
 	}
 
 	log.Printf("start serv on port: %d\n", port)
 	servLogs.Printf("start serv on port: %d\n", port)
-	dbLogs.Printf("database coonnected")
+	servLogs.Printf("database coonnected")
 	log.Printf("database coonnected")
 
 	if err := myServ.Server.ListenAndServe(); err != nil {
