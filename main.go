@@ -16,6 +16,12 @@ func main() {
 	port := config.GetPortFromEnv()
 	dbName := config.GetDBFromEnv()
 
+	password := config.GetPasswordFromEnv()
+	if password == "" {
+		fmt.Print("Необходимо задать пароль в переменной окружения TODO_PASSWORD")
+		return
+	}
+
 	err := os.Mkdir("logs", 0755)
 	if err != nil && !errors.Is(err, os.ErrExist) {
 		log.Fatal(err)
@@ -40,7 +46,7 @@ func main() {
 	}
 	defer dataBase.Close()
 
-	myServ, err := server.NewServer(servLogs, port, dataBase)
+	myServ, err := server.NewServer(servLogs, port, dataBase, password)
 	if err != nil {
 		servLogs.Fatal("error creating server: ", err)
 	}

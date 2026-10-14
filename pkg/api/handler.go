@@ -6,21 +6,25 @@ import (
 	"go-final/pkg/db"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type Handler struct {
 	Logger     *log.Logger
 	FileServer http.Handler
 	Store      *db.SchedulerStore
+	password   string
 }
 
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func NewHandler(logger *log.Logger, handler http.Handler, database *sql.DB) (*Handler, error) {
+func NewHandler(logger *log.Logger, handler http.Handler, database *sql.DB, password string) (*Handler, error) {
 
 	store, err := db.NewSchedulerStore(database)
 	if err != nil {
@@ -31,15 +35,46 @@ func NewHandler(logger *log.Logger, handler http.Handler, database *sql.DB) (*Ha
 		Logger:     logger,
 		FileServer: handler,
 		Store:      store,
+		password:   password,
 	}, nil
 }
 
 func (h *Handler) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		//if r.Header.Get("Sec-Fetch-Dest") == "document" {
+
 		h.Logger.Printf("Входящий запрос: метод=%s URL=%s", r.Method, r.RequestURI)
 		log.Printf("Входящий запрос: метод=%s URL=%s\n", r.Method, r.RequestURI)
-		//}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pass := os.Getenv("TODO_PASSWORD")
+		if len(pass) > 0 {
+			var tokenString string
+			cookie, err := r.Cookie("token")
+			if err == nil {
+				tokenString = cookie.Value
+			}
+
+			tokenString = strings.TrimPrefix(tokenString, "Bearer ")
+
+			token, err := jwt.Parse(
+				tokenString,
+				func(token *jwt.Token) (any, error) {
+					return []byte(h.password), nil
+				},
+				jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+				jwt.WithExpirationRequired(),
+			)
+
+			if err != nil || !token.Valid {
+				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				return
+			}
+		}
 		next.ServeHTTP(w, r)
 	})
 }
@@ -68,6 +103,10 @@ func writeJSON(w http.ResponseWriter, isError bool, data any) {
 
 func DateAfter(t1, t2 time.Time) bool {
 	return t1.Format("20060102") > t2.Format("20060102")
+}
+
+func DateBeforeOrEqual(t1, t2 time.Time) bool {
+	return t1.Format("20060102") <= t2.Format("20060102")
 }
 
 func DateBefore(t1, t2 time.Time) bool {

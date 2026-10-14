@@ -3,6 +3,9 @@ package config
 import (
 	"os"
 	"strconv"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func GetPortFromEnv() int {
@@ -23,4 +26,22 @@ func GetDBFromEnv() string {
 		return "scheduler.db"
 	}
 	return db
+}
+
+func GetPasswordFromEnv() string {
+	password := os.Getenv("TODO_PASSWORD")
+	if password == "" {
+		return ""
+	}
+	return password
+}
+
+func GetToken(password string) (string, error) {
+	claims := jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(8 * time.Hour)),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	return token.SignedString([]byte(password))
 }

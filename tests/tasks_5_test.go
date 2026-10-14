@@ -25,7 +25,7 @@ func addTask(t *testing.T, task task) string {
 }
 
 func getTasks(t *testing.T, search string) []map[string]string {
-	url := "api/tasks.go"
+	url := "api/tasks"
 	if Search {
 		url += "?search=" + search
 	}
@@ -36,7 +36,7 @@ func getTasks(t *testing.T, search string) []map[string]string {
 	var m map[string][]map[string]string
 	err = json.Unmarshal(body, &m)
 	assert.NoError(t, err)
-	return m["tasks.go"]
+	return m["tasks"]
 }
 
 func TestTasks(t *testing.T) {

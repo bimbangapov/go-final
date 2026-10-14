@@ -48,6 +48,7 @@ func (h *Handler) AddTaskHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, true, respErr)
 		return
 	}
+
 	id, err := h.Store.AddTask(ctx, &task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
