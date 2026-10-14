@@ -31,7 +31,7 @@ func GetDBFromEnv() string {
 func GetPasswordFromEnv() string {
 	password := os.Getenv("TODO_PASSWORD")
 	if password == "" {
-		return ""
+		return "qwerty12345"
 	}
 	return password
 }

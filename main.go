@@ -17,10 +17,6 @@ func main() {
 	dbName := config.GetDBFromEnv()
 
 	password := config.GetPasswordFromEnv()
-	if password == "" {
-		fmt.Print("Необходимо задать пароль в переменной окружения TODO_PASSWORD")
-		return
-	}
 
 	err := os.Mkdir("logs", 0755)
 	if err != nil && !errors.Is(err, os.ErrExist) {

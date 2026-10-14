@@ -1,2 +1,5 @@
 /logs/server.logs
 /data
+app.exe
+*.exe
+.env
