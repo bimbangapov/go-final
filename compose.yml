@@ -1,0 +1,18 @@
+services:
+  todo-app:
+    image: go-final:1.0.0
+
+    container_name: go-final
+
+    ports:
+      - "7540:7540"
+
+    environment:
+      TODO_PORT: "7540"
+      TODO_DBFILE: "/data/scheduler.db"
+      TODO_PASSWORD: "${TODO_PASSWORD}"
+
+    volumes:
+      - ./data:/data
+
+    restart: unless-stopped
