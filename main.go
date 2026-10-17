@@ -4,10 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"go-final/pkg/config"
-	"go-final/pkg/server"
+	"go-final/pkg/db"
 	"log"
 	"os"
+
+	"go-final/pkg/config"
+	"go-final/pkg/server"
 
 	_ "modernc.org/sqlite"
 )
@@ -42,7 +44,13 @@ func main() {
 	}
 	defer dataBase.Close()
 
-	myServ, err := server.NewServer(servLogs, port, dataBase, password)
+	store, err := db.NewSchedulerStore(dataBase)
+	if err != nil {
+		log.Printf("error connecting to database: %v", err)
+		servLogs.Fatal("error connecting to database: ", err)
+	}
+
+	myServ, err := server.NewServer(servLogs, port, store, password)
 	if err != nil {
 		servLogs.Fatal("error creating server: ", err)
 	}

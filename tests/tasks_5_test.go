@@ -30,7 +30,6 @@ func getTasks(t *testing.T, search string) []map[string]string {
 		url += "?search=" + search
 	}
 	body, err := requestJSON(url, nil, http.MethodGet)
-	fmt.Println(string(body))
 	assert.NoError(t, err)
 
 	var m map[string][]map[string]string

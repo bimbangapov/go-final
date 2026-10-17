@@ -3,8 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"go-final/pkg/config"
 	"net/http"
+
+	"go-final/pkg/config"
 )
 
 type SignInRequest struct {

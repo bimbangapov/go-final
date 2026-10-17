@@ -9,7 +9,7 @@ type TasksResp struct {
 	Tasks []Task `json:"tasks.go"`
 }
 
-func (s *SchedulerStore) Tasks(ctx context.Context, limit int) ([]*Task, error) {
+func (s *SchedulerStore) GetTasks(ctx context.Context, limit int) ([]*Task, error) {
 	tasks := []*Task{}
 
 	rows, err := s.db.QueryContext(ctx, "SELECT id,date,title,comment,repeat FROM scheduler order by date asc  limit :limit",
@@ -36,7 +36,7 @@ func (s *SchedulerStore) Tasks(ctx context.Context, limit int) ([]*Task, error) 
 	return tasks, nil
 }
 
-func (s *SchedulerStore) TasksByTitle(ctx context.Context, title string, limit int) ([]*Task, error) {
+func (s *SchedulerStore) GetTasksByTitle(ctx context.Context, title string, limit int) ([]*Task, error) {
 	tasks := []*Task{}
 	rows, err := s.db.QueryContext(ctx, "SELECT id,date,title,comment,repeat FROM scheduler WHERE title like :title order by date asc limit :limit",
 		sql.Named("title", "%"+title+"%"),
@@ -59,7 +59,7 @@ func (s *SchedulerStore) TasksByTitle(ctx context.Context, title string, limit i
 	}
 	return tasks, nil
 }
-func (s *SchedulerStore) TasksByDate(ctx context.Context, date string, limit int) ([]*Task, error) {
+func (s *SchedulerStore) GetTasksByDate(ctx context.Context, date string, limit int) ([]*Task, error) {
 	tasks := []*Task{}
 
 	rows, err := s.db.QueryContext(ctx, "SELECT id,date,title,comment,repeat FROM scheduler WHERE date like :date order by date asc limit :limit",

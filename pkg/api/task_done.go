@@ -3,10 +3,11 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"go-final/pkg/db"
 	"net/http"
 	"strconv"
 	"time"
+
+	"go-final/pkg/db"
 )
 
 func (h *Handler) DoneTaskHandler(w http.ResponseWriter, r *http.Request) {

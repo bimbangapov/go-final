@@ -3,8 +3,9 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"go-final/pkg/db"
 	"net/http"
+
+	"go-final/pkg/db"
 )
 
 func (h *Handler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {

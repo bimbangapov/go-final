@@ -1,12 +1,13 @@
 package server
 
 import (
-	"database/sql"
 	"fmt"
-	"go-final/pkg/api"
+	"go-final/pkg/db"
 	"log"
 	"net/http"
 	"time"
+
+	"go-final/pkg/api"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -16,9 +17,9 @@ type Server struct {
 	Server *http.Server
 }
 
-func NewServer(log *log.Logger, port int, db *sql.DB, password string) (*Server, error) {
+func NewServer(log *log.Logger, port int, store *db.SchedulerStore, password string) (*Server, error) {
 	fileServer := http.FileServer(http.Dir("./web"))
-	h, err := api.NewHandler(log, fileServer, db, password)
+	h, err := api.NewHandler(log, fileServer, store, password)
 	if err != nil {
 		return nil, err
 	}

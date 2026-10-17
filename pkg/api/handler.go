@@ -1,14 +1,14 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
-	"go-final/pkg/db"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"go-final/pkg/db"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -24,12 +24,7 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func NewHandler(logger *log.Logger, handler http.Handler, database *sql.DB, password string) (*Handler, error) {
-
-	store, err := db.NewSchedulerStore(database)
-	if err != nil {
-		return &Handler{}, err
-	}
+func NewHandler(logger *log.Logger, handler http.Handler, store *db.SchedulerStore, password string) (*Handler, error) {
 
 	return &Handler{
 		Logger:     logger,

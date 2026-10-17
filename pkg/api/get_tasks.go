@@ -1,9 +1,10 @@
 package api
 
 import (
-	"go-final/pkg/db"
 	"net/http"
 	"time"
+
+	"go-final/pkg/db"
 )
 
 type TasksResp struct {
@@ -16,7 +17,7 @@ func (h *Handler) TasksHadler(w http.ResponseWriter, r *http.Request) {
 	if search != "" {
 		searchDate, err := time.Parse("02.01.2006", search)
 		if err != nil { // Ветка поиска про Title
-			tasks, err := h.Store.TasksByTitle(r.Context(), search, 50)
+			tasks, err := h.Store.GetTasksByTitle(r.Context(), search, 50)
 			if err != nil {
 				writeJSON(w, true, ErrorResponse{Error: "StatusInternalServerError"})
 				return
@@ -29,7 +30,7 @@ func (h *Handler) TasksHadler(w http.ResponseWriter, r *http.Request) {
 			return
 		} else { // Поиска по Date
 			search = searchDate.Format("20060102")
-			tasks, err := h.Store.TasksByDate(r.Context(), search, 50)
+			tasks, err := h.Store.GetTasksByDate(r.Context(), search, 50)
 			if err != nil {
 				writeJSON(w, true, ErrorResponse{Error: "StatusInternalServerError"})
 				return
@@ -44,7 +45,7 @@ func (h *Handler) TasksHadler(w http.ResponseWriter, r *http.Request) {
 
 	}
 	// ветка поиска с пустым search
-	tasks, err := h.Store.Tasks(r.Context(), 50)
+	tasks, err := h.Store.GetTasks(r.Context(), 50)
 
 	if err != nil {
 		writeJSON(w, true, ErrorResponse{Error: "StatusInternalServerError"})

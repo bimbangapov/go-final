@@ -3,3 +3,5 @@
 app.exe
 *.exe
 .env
+.idea
+.DS_Store
