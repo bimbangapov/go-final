@@ -28,7 +28,7 @@ func (h *Handler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		respErr := &ErrorResponse{
 			"title обязательный для заполнения",
 		}
-		writeJSON(w, true, respErr)
+		h.writeJSON(w, 400, respErr)
 		return
 	}
 
@@ -36,14 +36,14 @@ func (h *Handler) UpdateTaskHandler(w http.ResponseWriter, r *http.Request) {
 		respErr := &ErrorResponse{
 			err.Error(),
 		}
-		writeJSON(w, true, respErr)
+		h.writeJSON(w, 400, respErr)
 		return
 	}
 
 	err = h.Store.UpdateTask(r.Context(), &task)
 	if err != nil {
-		writeJSON(w, true, ErrorResponse{Error: "Error updating task"})
+		h.writeJSON(w, 500, ErrorResponse{Error: "Error updating task"})
 		return
 	}
-	writeJSON(w, false, struct{}{})
+	h.writeJSON(w, 200, struct{}{})
 }

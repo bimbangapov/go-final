@@ -1,57 +1,56 @@
 package api
 
 import (
+	"go-final/pkg/config"
 	"net/http"
 	"time"
 )
 
 func (h *Handler) NextDayHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("method not allowed"))
 		h.Logger.Printf("method not allowed")
+		h.writeJSON(w, 405, ErrorResponse{Error: "method not allowed"})
+
 		return
 	}
 
 	now := r.URL.Query().Get("now")
 	if now == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("now is required"))
-		h.Logger.Printf("now is required")
-		return
+		now = time.Now().Format(config.DatePattern)
 	}
-	nowTime, err := time.Parse("20060102", now)
+	nowTime, err := time.Parse(config.DatePattern, now)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("now/date must by YYYYMMDD"))
 		h.Logger.Printf("now/date must by YYYYMMDD")
+		h.writeJSON(w, 400, ErrorResponse{Error: "now/date must by YYYYMMDD"})
+		return
 	}
 
 	date := r.URL.Query().Get("date")
 	if date == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("date is required"))
 		h.Logger.Printf("date is required")
+		h.writeJSON(w, 400, ErrorResponse{Error: "date is required"})
 		return
 	}
 
 	repeat := r.URL.Query().Get("repeat")
 	if repeat == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("repeat is required"))
 		h.Logger.Printf("repeat is required")
+		h.writeJSON(w, 400, ErrorResponse{Error: "repeat is required"})
 		return
 	}
 
 	nextDate, err := NextDate(nowTime, date, repeat)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 		return
 	}
 	h.Logger.Printf("Входящий запрос GET /api/nextdate")
 
-	w.Header().Set("Content-Type", "application/txt")
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(nextDate))
+
+	if _, err := w.Write([]byte(nextDate)); err != nil {
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
+		return
+	}
 }

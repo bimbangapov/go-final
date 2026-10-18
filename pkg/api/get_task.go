@@ -11,12 +11,12 @@ func (h *Handler) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJSON(w, true, ErrorResponse{Error: "id is required"})
+		h.writeJSON(w, 400, ErrorResponse{Error: "id is required"})
 		return
 	}
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 		return
 	}
 
@@ -30,9 +30,14 @@ func (h *Handler) GetTaskHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			w.Write(resp)
+			if _, err := w.Write(resp); err != nil {
+				h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
+				return
+			}
 			return
 		}
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
+		return
 	}
-	writeJSON(w, false, task)
+	h.writeJSON(w, 200, task)
 }

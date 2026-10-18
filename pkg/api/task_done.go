@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"go-final/pkg/config"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,48 +15,43 @@ func (h *Handler) DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
 	if id == "" {
-		writeJSON(w, true, ErrorResponse{Error: "id is required"})
+		h.writeJSON(w, 400, ErrorResponse{Error: "id is required"})
 		return
 	}
 
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		writeJSON(w, true, ErrorResponse{Error: "id must be digit"})
+		h.writeJSON(w, 400, ErrorResponse{Error: "id must be digit"})
 		return
 	}
 
 	task, err := h.Store.GetTask(r.Context(), idInt)
 	if err != nil {
-		writeJSON(w, true, ErrorResponse{Error: err.Error()})
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 		return
 	}
 
 	if task.Repeat != "" { // ветка получения след даты
-		taskDate, err := time.Parse("20060102", task.Date)
+		taskDate, err := time.Parse(config.DatePattern, task.Date)
 		if err != nil {
-			writeJSON(w, true, ErrorResponse{Error: err.Error()})
+			h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 			return
 		}
 
-		if DateAfter(taskDate, time.Now().UTC()) || task.Date == time.Now().UTC().Format("20060102") { // Если дата в будущем
+		if DateAfter(taskDate, time.Now().UTC()) || task.Date == time.Now().UTC().Format(config.DatePattern) { // Если дата в будущем
 			task.Date, err = NextDate(time.Now().UTC(), task.Date, task.Repeat)
 			if err != nil {
-				writeJSON(w, true, ErrorResponse{Error: err.Error()})
-				return
-			}
-		} else { // если дата сегодня/в прошлом
-			err := checkDate(task)
-			if err != nil {
-				writeJSON(w, true, ErrorResponse{Error: err.Error()})
+				h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 				return
 			}
 		}
+
 		err = h.Store.UpdateTask(r.Context(), task)
 		if err != nil {
-			writeJSON(w, true, ErrorResponse{err.Error()})
+			h.writeJSON(w, 400, ErrorResponse{err.Error()})
 			return
 		}
-		writeJSON(w, false, struct{}{})
+		h.writeJSON(w, 200, struct{}{})
 		return
 	}
 
@@ -66,17 +62,20 @@ func (h *Handler) DoneTaskHandler(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
 			resp, err := json.Marshal(&ErrorResponse{"task not found"})
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 				return
 			}
-			w.Write(resp)
+			if _, err := w.Write(resp); err != nil {
+				h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
+				return
+			}
 			return
 		}
 		if err != nil {
-			writeJSON(w, true, ErrorResponse{err.Error()})
+			h.writeJSON(w, 400, ErrorResponse{err.Error()})
 			return
 		}
-		writeJSON(w, false, struct{}{})
+		h.writeJSON(w, 200, struct{}{})
 	}
 
 }

@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"go-final/pkg/config"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -46,7 +46,7 @@ func (h *Handler) LoggingMiddleware(next http.Handler) http.Handler {
 
 func (h *Handler) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pass := os.Getenv("TODO_PASSWORD")
+		pass := h.password
 		if len(pass) > 0 {
 			var tokenString string
 			cookie, err := r.Cookie("token")
@@ -78,57 +78,70 @@ func isValidInput(s string) bool {
 	return len(strings.TrimSpace(s)) > 0
 }
 
-func writeJSON(w http.ResponseWriter, isError bool, data any) {
+func (h *Handler) writeJSON(w http.ResponseWriter, code int, data any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	if isError {
-		w.WriteHeader(http.StatusInternalServerError)
-	} else {
+	switch code {
+	case 200:
 		w.WriteHeader(http.StatusOK)
+	case 400:
+		w.WriteHeader(http.StatusBadRequest)
+	case 401:
+		w.WriteHeader(http.StatusUnauthorized)
+	case 405:
+		w.WriteHeader(http.StatusMethodNotAllowed)
+	case 500:
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	resp, err := json.Marshal(data)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.Logger.Println(err)
 		return
 	}
 
-	w.Write(resp)
+	if _, err := w.Write(resp); err != nil {
+		log.Printf("write response: %v", err)
+		return
+	}
 }
 
 func DateAfter(t1, t2 time.Time) bool {
-	return t1.Format("20060102") > t2.Format("20060102")
+	return t1.Format(config.DatePattern) > t2.Format(config.DatePattern)
 }
 
 func DateBeforeOrEqual(t1, t2 time.Time) bool {
-	return t1.Format("20060102") <= t2.Format("20060102")
+	return t1.Format(config.DatePattern) <= t2.Format(config.DatePattern)
 }
 
 func DateBefore(t1, t2 time.Time) bool {
-	return t1.Format("20060102") < t2.Format("20060102")
+	return t1.Format(config.DatePattern) < t2.Format(config.DatePattern)
 }
 
 func checkDate(task *db.Task) error {
 	now := time.Now().UTC()
 	if task.Date == "" {
-		task.Date = now.Format("20060102")
+		task.Date = now.Format(config.DatePattern)
 	}
 
-	t, err := time.Parse("20060102", task.Date)
+	t, err := time.Parse(config.DatePattern, task.Date)
 	if err != nil {
 		return err
 	}
 
 	if task.Repeat == "" {
 		if DateBefore(t, now) {
-			task.Date = now.Format("20060102")
+			task.Date = now.Format(config.DatePattern)
 		}
 	}
 
-	if task.Repeat != "" && DateBefore(t, now) {
-		task.Date, err = NextDate(now, task.Date, task.Repeat)
+	if task.Repeat != "" {
+		nextDate, err := NextDate(now, task.Date, task.Repeat)
 		if err != nil {
 			return err
+		}
+		if DateBefore(t, now) {
+			task.Date = nextDate
 		}
 	}
 

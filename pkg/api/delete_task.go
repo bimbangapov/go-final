@@ -8,19 +8,19 @@ import (
 func (h *Handler) DeleteTaskHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
-		writeJSON(w, true, ErrorResponse{Error: "id is required"})
+		h.writeJSON(w, 400, ErrorResponse{Error: "id is required"})
 		return
 	}
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
-		writeJSON(w, true, ErrorResponse{Error: "id is invalid"})
+		h.writeJSON(w, 400, ErrorResponse{Error: "id is invalid"})
 		return
 	}
 
 	err = h.Store.DeleteTask(r.Context(), idInt)
 	if err != nil {
-		writeJSON(w, true, ErrorResponse{Error: err.Error()})
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 		return
 	}
-	writeJSON(w, false, struct{}{})
+	h.writeJSON(w, 200, struct{}{})
 }

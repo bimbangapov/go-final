@@ -38,7 +38,7 @@ func (s *SchedulerStore) GetTasks(ctx context.Context, limit int) ([]*Task, erro
 
 func (s *SchedulerStore) GetTasksByTitle(ctx context.Context, title string, limit int) ([]*Task, error) {
 	tasks := []*Task{}
-	rows, err := s.db.QueryContext(ctx, "SELECT id,date,title,comment,repeat FROM scheduler WHERE title like :title order by date asc limit :limit",
+	rows, err := s.db.QueryContext(ctx, "SELECT id,date,title,comment,repeat FROM scheduler WHERE title like :title OR comment like :title order by date asc limit :limit",
 		sql.Named("title", "%"+title+"%"),
 		sql.Named("limit", limit))
 	if err != nil {

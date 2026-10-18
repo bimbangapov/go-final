@@ -8,6 +8,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	DatePattern = "20060102"
+)
+
 func GetPortFromEnv() int {
 	port := os.Getenv("TODO_PORT")
 	if port == "" {

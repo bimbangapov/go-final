@@ -22,7 +22,8 @@ func main() {
 
 	err := os.Mkdir("logs", 0755)
 	if err != nil && !errors.Is(err, os.ErrExist) {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	flog, err := os.OpenFile("logs/server.logs", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0664)
@@ -40,19 +41,22 @@ func main() {
 	dataBase, err := sql.Open("sqlite", dbName)
 	if err != nil {
 		log.Printf("error connecting to database: %v", err)
-		servLogs.Fatal(err)
+		servLogs.Println(err)
+		return
 	}
 	defer dataBase.Close()
 
 	store, err := db.NewSchedulerStore(dataBase)
 	if err != nil {
 		log.Printf("error connecting to database: %v", err)
-		servLogs.Fatal("error connecting to database: ", err)
+		servLogs.Println("error connecting to database: ", err)
+		return
 	}
 
 	myServ, err := server.NewServer(servLogs, port, store, password)
 	if err != nil {
-		servLogs.Fatal("error creating server: ", err)
+		servLogs.Println("error creating server: ", err)
+		return
 	}
 
 	log.Printf("start serv on port: %d\n", port)
@@ -62,7 +66,8 @@ func main() {
 
 	if err := myServ.Server.ListenAndServe(); err != nil {
 		fmt.Printf("error serving on port: %d\n", port)
-		servLogs.Fatal(err)
+		servLogs.Println(err)
+		return
 	}
 
 }

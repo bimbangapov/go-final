@@ -31,10 +31,17 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write(res)
+		if _, err := w.Write(res); err != nil {
+			h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
+			return
+		}
 		return
 	}
-	err = json.Unmarshal(buff.Bytes(), &signInRequest)
+	if err = json.Unmarshal(buff.Bytes(), &signInRequest); err != nil {
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
+		return
+	}
+
 	if h.password != signInRequest.Password {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusUnauthorized)
@@ -43,14 +50,17 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.Write(res)
+		if _, err := w.Write(res); err != nil {
+			h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
+			return
+		}
 		return
 	}
 	token, err := config.GetToken(h.password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		h.writeJSON(w, 400, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	writeJSON(w, false, SignInResponse{Token: token})
+	h.writeJSON(w, 200, SignInResponse{Token: token})
 }

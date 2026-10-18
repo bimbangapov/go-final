@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"go-final/pkg/config"
 	"strconv"
 	"strings"
 	"time"
@@ -73,7 +74,7 @@ var (
 )
 
 func NextDate(now time.Time, dstart string, repeat string) (string, error) {
-	dateStart, err := time.Parse("20060102", dstart)
+	dateStart, err := time.Parse(config.DatePattern, dstart)
 	if err != nil {
 		return "", err
 	}
@@ -93,20 +94,20 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return nextAvailableDate.Format("20060102"), nil
+		return nextAvailableDate.Format(config.DatePattern), nil
 	case "w":
 		nextAvailableDate, err = checkRulesForWeek(repeatSlice, dateStart, now)
 		if err != nil {
 			return "", err
 		}
-		return nextAvailableDate.Format("20060102"), nil
+		return nextAvailableDate.Format(config.DatePattern), nil
 	case "m":
 		if len(repeatSlice) == 2 {
 			nextAvailableDate, err = checkRulesForMonthBasic(repeatSlice, dateStart, now)
 			if err != nil {
 				return "", ErrorRepeatRules
 			}
-			return nextAvailableDate.Format("20060102"), nil
+			return nextAvailableDate.Format(config.DatePattern), nil
 		}
 		if len(repeatSlice) == 3 {
 			var (
@@ -121,6 +122,12 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				if err != nil {
 					return "", err
 				}
+
+				//опредедление валидного месяца
+				if month < 0 || month > 12 {
+					return "", ErrorRepeatRules
+				}
+
 				candidateDate, err = checkRulesForMonthExtended(daysSlc, dateStart, now, time.Month(month))
 				if err != nil {
 					return "", err
@@ -134,7 +141,7 @@ func NextDate(now time.Time, dstart string, repeat string) (string, error) {
 				}
 			}
 
-			return candidateDate.Format("20060102"), nil
+			return candidateDate.Format(config.DatePattern), nil
 
 		}
 	}
@@ -157,7 +164,35 @@ func checkRulesForMonthExtended(repeatSlice []string, dateStart, now time.Time, 
 		if err != nil {
 			return time.Time{}, err
 		}
-		tmpDay = day
+
+		//определения наличия такого дня в месяце
+		if !dayOfMonth[day] {
+			return time.Time{}, ErrorRepeatRules
+		}
+
+		//опредедения дня с учетом високосного года
+		if day == -1 || day == -2 {
+			switch day {
+			case -1:
+				//проверка для високосного года
+				if isleapYear(tmpYear) && month == time.February {
+					tmpDay = lastMonthDay[22]
+				} else {
+					tmpDay = lastMonthDay[int(month)]
+				}
+
+			case -2:
+
+				if isleapYear(tmpYear) && month == time.February {
+					tmpDay = lastMonthDay[22] - 1
+				} else {
+					tmpDay = lastMonthDay[int(month)] - 1
+				}
+			}
+		} else {
+			tmpDay = day
+		}
+
 		tmpMonth = month
 		targetDate := time.Date(tmpYear, tmpMonth, tmpDay, 0, 0, 0, 0, time.UTC)
 		if DateBefore(targetDate, dateStart) {
@@ -168,7 +203,7 @@ func checkRulesForMonthExtended(repeatSlice []string, dateStart, now time.Time, 
 
 	candidateDateInternal = candidateDatesInternal[0]
 	for _, item := range candidateDatesInternal {
-		if DateBefore(item, dateStart) {
+		if DateBefore(item, candidateDateInternal) {
 			candidateDateInternal = item
 		}
 	}
@@ -191,8 +226,9 @@ func checkRulesForMonthBasic(repeatSlice []string, dateStart, now time.Time) (ti
 	//1 для каждого дня в массиве находим дату и сохраняем ее в переменную
 	//В цикле каждую найденную дату сравниваем с предыдущей и оставляем в переменной только самую наиближайшую
 	var (
-		nextAvailableDay, earliestCandidate time.Time
-		candidateDate                       []time.Time
+		//nextAvailableDay,
+		earliestCandidate time.Time
+		candidateDates    []time.Time
 	)
 	for _, i := range dayOfMonthSlc {
 		needDay, err := strconv.Atoi(i)
@@ -211,7 +247,11 @@ func checkRulesForMonthBasic(repeatSlice []string, dateStart, now time.Time) (ti
 		// проверяем на последний и предпоследний день месяца
 		if needDay == -1 {
 			if dateStart.Day() == lastMonthDay[int(dateStart.Month())] {
-				tmpMonth += +1
+				if tmpMonth == time.December {
+					tmpMonth = time.January
+				} else {
+					tmpMonth += +1
+				}
 			}
 
 			//учитываем вискосный год
@@ -225,13 +265,17 @@ func checkRulesForMonthBasic(repeatSlice []string, dateStart, now time.Time) (ti
 				tmpYear += 1
 			}
 			nextDate := time.Date(tmpYear, tmpMonth, tmpDay, 0, 0, 0, 0, time.UTC)
-			nextAvailableDay = getEarliestDate(nextAvailableDay, nextDate)
-			candidateDate = append(candidateDate, nextAvailableDay)
+			//nextAvailableDay = getEarliestDate(nextAvailableDay, nextDate)
+			candidateDates = append(candidateDates, nextDate)
 			continue
 		}
 		if needDay == -2 {
 			if dateStart.Day() == lastMonthDay[int(dateStart.Month())]-1 {
-				tmpMonth += +1
+				if tmpMonth == time.December {
+					tmpMonth = time.January
+				} else {
+					tmpMonth += +1
+				}
 			}
 			if isleapYear(tmpYear) && tmpMonth == time.February {
 				tmpDay = lastMonthDay[22] - 1
@@ -243,30 +287,42 @@ func checkRulesForMonthBasic(repeatSlice []string, dateStart, now time.Time) (ti
 				tmpYear += 1
 			}
 			nextDate := time.Date(tmpYear, tmpMonth, tmpDay, 0, 0, 0, 0, time.UTC)
-			nextAvailableDay = getEarliestDate(nextAvailableDay, nextDate)
-			candidateDate = append(candidateDate, nextAvailableDay)
+			//nextAvailableDay = getEarliestDate(nextAvailableDay, nextDate)
+			candidateDates = append(candidateDates, nextDate)
 			continue
 		}
 
 		//находим след месяц у которого есть нужный день
-		if needDay <= dateStart.Day() || needDay >= lastMonthDay[int(dateStart.Month())] {
-			tmpMonth += +1
+		if needDay <= dateStart.Day() || needDay > lastMonthDay[int(tmpMonth)] { //|| needDay >= lastMonthDay[int(dateStart.Month())] {
+			if tmpMonth == time.December {
+				tmpMonth = time.January
+			} else {
+				tmpMonth += +1
+			}
 		}
 
+		//if needDay > lastMonthDay[int(tmpMonth)] {
+		//	if tmpMonth == time.December {
+		//		tmpMonth = time.January
+		//	} else {
+		//		tmpMonth += +1
+		//	}
+		//}
+
 		//увеличиваем год если декабрь
-		if dateStart.Month() == time.December {
+		if dateStart.Month() == time.December && needDay <= dateStart.Day() {
 			tmpYear += 1
 		}
 
 		nextDate := time.Date(tmpYear, tmpMonth, needDay, 0, 0, 0, 0, time.UTC)
-		nextAvailableDay = getEarliestDate(nextAvailableDay, nextDate)
+		//nextAvailableDay = getEarliestDate(nextAvailableDay, nextDate)
 		//кладем найденную дату в массив кандидатов
-		candidateDate = append(candidateDate, nextAvailableDay)
+		candidateDates = append(candidateDates, nextDate)
 	}
 
 	// находим в массиве кандидатов самую раннюю дату
-	earliestCandidate = candidateDate[0]
-	for _, item := range candidateDate {
+	earliestCandidate = candidateDates[0]
+	for _, item := range candidateDates {
 		if DateBefore(item, earliestCandidate) {
 			earliestCandidate = item
 		}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"go-final/pkg/config"
 	"strconv"
 	"time"
 )
@@ -13,7 +14,7 @@ func (s *SchedulerStore) UpdateTask(ctx context.Context, task *Task) error {
 	if err != nil {
 		return err
 	}
-	_, err = time.Parse("20060102", task.Date)
+	_, err = time.Parse(config.DatePattern, task.Date)
 	if err != nil {
 		return err
 	}
