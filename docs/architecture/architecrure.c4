@@ -1,0 +1,67 @@
+specification {
+    element frontend {
+        style {
+            shape browser
+        }
+    }
+
+    element backend {
+        style {
+            shape rectangle
+        }
+    }
+
+    element database {
+        style {
+            shape storage
+        }
+    }
+}
+
+model {
+    frontend = frontend 'Frontend' {
+        description 'HTML, CSS, JavaScript'
+    }
+
+    server = backend 'Go Server' {
+            description 'Backend приложения'
+
+            router = backend 'Router' {
+                description 'chi.Router'
+            }
+
+            handlers = backend 'Handlers' {
+                description 'HTTP handlers'
+            }
+
+            storage = backend 'Storage' {
+                description 'Работа с SQLite'
+            }
+
+            router -> handlers
+            handlers -> storage
+        }
+
+    db = database 'SQLite' {
+        description 'tracker.db'
+    }
+
+    frontend -> server 'HTTP'
+    server -> db 'SQL'
+}
+
+views {
+     view overview {
+            title 'Общая архитектура'
+
+            include frontend
+            include server
+            include db
+    }
+    view serverDetails of server {
+        title 'Внутреннее устройство Go Server'
+
+        include *
+    }
+
+}
